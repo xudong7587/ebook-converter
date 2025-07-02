@@ -19,7 +19,11 @@ RUN fc-cache -fv
 
 # 复制并安装后端依赖
 COPY server/package*.json ./
-RUN npm install --production
+# 在 COPY server/package*.json ./ 之后添加
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm config set fetch-retries 3 && \
+    npm config set fetch-retry-factor 10 && \
+    npm install --production --verbose
 
 # 复制后端代码
 COPY server/ ./
