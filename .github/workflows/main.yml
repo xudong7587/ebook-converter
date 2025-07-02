@@ -3,19 +3,22 @@ name: Build and Deploy Docker Image
 on:
   push:
     branches:
-      - main  # 推送到main分支时触发
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # 设置超时时间
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
+      - name: Set up Docker Buildx with container driver
         uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container  # 使用支持缓存的容器驱动
+          install: true
 
       - name: Cache Docker layers
         uses: actions/cache@v4
@@ -25,20 +28,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Cache npm dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('server/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
-
-      - name: Build Docker image
+      - name: Build Docker image with cache
         run: |
-          docker build \
+          docker buildx build \
             --cache-from type=local,src=/tmp/.buildx-cache \
-            --cache-to type=local,dest=/tmp/.buildx-cache \
-            -t ebook-converter:latest .
+            --cache-to type=local,dest=/tmp/.buildx-cache,mode=max \
+            -t ebook-converter:latest \
+            --load .  # 添加--load参数将镜像加载到本地Docker
 
       - name: Save Docker image
         run: |
@@ -50,4 +46,4 @@ jobs:
         with:
           name: docker-image
           path: artifacts/ebook-converter.tar
-          retention-days: 7  # 保留7天
+          retention-days: 7
