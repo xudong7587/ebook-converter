@@ -5,17 +5,20 @@ FROM node:16-slim
 WORKDIR /app
 
 # 安装系统依赖（添加国内源加速）
-COPY server/package*.json ./
-RUN mkdir -p /npm-debug && \
-    npm install --production --verbose > /npm-debug/install.log 2>&1 || \
-    (echo "npm 安装失败，请查看完整日志" && \
-     cp /npm-debug/install.log /npm-debug/full_install.log && \
-     # 输出完整日志而不是最后100行
-     cat /npm-debug/full_install.log && \
-     exit 1)
+RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        calibre \
+        wkhtmltopdf \
+        fontconfig \  # 确保fontconfig被安装
+        fonts-wqy-microhei \
+        tini && \
+    rm -rf /var/lib/apt/lists/*
 
-# 安装中文字体支持
-RUN fc-cache -fv
+# 安装中文字体支持（增加验证步骤）
+RUN echo "验证字体配置工具是否可用:" && \
+    which fc-cache && \
+    fc-cache -fv
 
 # 设置npm淘宝镜像源并增加重试机制
 RUN npm config set registry https://registry.npmmirror.com && \
@@ -24,7 +27,7 @@ RUN npm config set registry https://registry.npmmirror.com && \
     npm config set fetch-retry-mintimeout 10000 && \
     npm config set fetch-retry-maxtimeout 60000
 
-# 复制并安装依赖（单独分离以利用缓存）
+# 复制并安装依赖
 COPY server/package*.json ./
 RUN mkdir -p /npm-debug && \
     npm install --production --verbose > /npm-debug/install.log 2>&1 || \
