@@ -1,7 +1,6 @@
-# 使用Node.js基础镜像
+# 在原有的基础上增加调试步骤
 FROM node:16-slim
 
-# 设置工作目录
 WORKDIR /app
 
 # 安装必要的系统依赖
@@ -11,19 +10,28 @@ RUN apt-get update && \
         wkhtmltopdf \
         fontconfig \
         fonts-wqy-microhei \
-        tini && \
+        tini \
+        build-essential && \
     rm -rf /var/lib/apt/lists/*
 
 # 安装中文字体支持
 RUN fc-cache -fv
 
-# 复制并安装后端依赖
-COPY server/package*.json ./
-# 在 COPY server/package*.json ./ 之后添加
+# 设置npm源和调试选项
 RUN npm config set registry https://registry.npmmirror.com && \
     npm config set fetch-retries 3 && \
     npm config set fetch-retry-factor 10 && \
-    npm install --production --verbose
+    npm config set loglevel verbose
+
+# 复制package.json并调试安装
+COPY server/package*.json ./
+RUN mkdir -p /npm-debug && \
+    npm install --production --verbose > /npm-debug/install.log 2>&1 || \
+    (echo "npm安装失败，请查看日志" && \
+     cat /npm-debug/install.log && \
+     exit 1)
+
+# 后续步骤保持不变...
 
 # 复制后端代码
 COPY server/ ./
