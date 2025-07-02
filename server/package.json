@@ -11,7 +11,7 @@
     "multer": "^1.4.5-lts.1",
     "mammoth": "^1.4.18",
     "pdf-parse": "^1.1.1",
-    "epub-gen": "^2.0.10"
+    "epub-gen": "latest"  
   },
   "engines": {
     "node": ">=16"
