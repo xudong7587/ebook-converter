@@ -1,45 +1,35 @@
-# 修改Dockerfile
+# 使用Node.js基础镜像
 FROM node:16-slim
 
+# 设置工作目录
 WORKDIR /app
 
-# 安装必要的系统依赖和编译工具
+# 安装必要的系统依赖
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         calibre \
         wkhtmltopdf \
         fontconfig \
         fonts-wqy-microhei \
-        tini \
-        build-essential \
-        curl \
-        python3 \
-        libglib2.0-dev \
-        libexpat1-dev \
-        libjpeg-dev \
-        libpng-dev \
-        libwebp-dev \
-        libtiff-dev \
-        libgif-dev && \
+        tini && \
     rm -rf /var/lib/apt/lists/*
-
-# 从源码安装libvips（v8.14.3是兼容Node.js 16的稳定版本）
-RUN curl -L https://github.com/libvips/libvips/releases/download/v8.14.3/vips-8.14.3.tar.gz -o vips.tar.gz && \
-    tar xzf vips.tar.gz && \
-    cd vips-8.14.3 && \
-    ./configure --disable-debug --disable-dependency-tracking --enable-silent-rules && \
-    make -j$(nproc) && \
-    make install && \
-    ldconfig && \
-    cd .. && \
-    rm -rf vips*
 
 # 安装中文字体支持
 RUN fc-cache -fv
 
-# 设置npm源
-RUN npm config set registry https://registry.npmmirror.com
-
 # 复制并安装后端依赖
 COPY server/package*.json ./
 RUN npm install --production
+
+# 复制后端代码
+COPY server/ ./
+
+# 复制前端代码
+COPY web/ ./public/
+
+# 暴露端口
+EXPOSE 3000
+
+# 设置启动命令
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["node", "server.js"]
