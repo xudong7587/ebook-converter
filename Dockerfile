@@ -3,16 +3,15 @@ FROM node:16-slim
 
 WORKDIR /app
 
-# 安装必要的系统依赖
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        calibre \
-        wkhtmltopdf \
-        fontconfig \
-        fonts-wqy-microhei \
-        tini \
-        build-essential && \
-    rm -rf /var/lib/apt/lists/*
+# 修改 Dockerfile 中的依赖安装部分
+COPY server/package*.json ./
+RUN mkdir -p /npm-debug && \
+    npm install --production --verbose > /npm-debug/install.log 2>&1 || \
+    (echo "npm 安装失败，请查看日志" && \
+     cp /npm-debug/install.log /npm-debug/full_install.log && \
+     tail -n 100 /npm-debug/install.log > /npm-debug/error_snippet.log && \
+     cat /npm-debug/error_snippet.log && \
+     exit 1)
 
 # 安装中文字体支持
 RUN fc-cache -fv
