@@ -28,6 +28,20 @@ jobs:
             -t ebook-converter:latest \
             --load .
 
+      - name: Save Docker image (if build succeeded)
+        if: steps.build-image.outcome == 'success'
+        run: |
+          mkdir -p artifacts/image
+          docker save -o artifacts/image/ebook-converter.tar ebook-converter:latest
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        if: steps.build-image.outcome == 'success'
+        with:
+          name: docker-image
+          path: artifacts/image/ebook-converter.tar
+          retention-days: 7
+
       - name: Extract npm debug logs (even if build failed)
         if: always()  # 无论前面步骤是否成功都执行
         run: |
