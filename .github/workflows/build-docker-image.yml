@@ -1,0 +1,49 @@
+name: Build and Deploy Docker Image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx with container driver
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container  # 使用支持缓存的容器驱动
+          install: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build Docker image with cache
+        run: |
+          docker buildx build \
+            --cache-from type=local,src=/tmp/.buildx-cache \
+            --cache-to type=local,dest=/tmp/.buildx-cache,mode=max \
+            -t ebook-converter:latest \
+            --load .  # 添加--load参数将镜像加载到本地Docker
+
+      - name: Save Docker image
+        run: |
+          mkdir -p artifacts
+          docker save -o artifacts/ebook-converter.tar ebook-converter:latest
+
+      - name: Upload image as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: artifacts/ebook-converter.tar
+          retention-days: 7
