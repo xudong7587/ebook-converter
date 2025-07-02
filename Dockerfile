@@ -5,17 +5,14 @@ FROM node:16-slim
 WORKDIR /app
 
 # 安装系统依赖（添加国内源加速）
-RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-        calibre \
-        wkhtmltopdf \
-        fontconfig \
-        fonts-wqy-microhei \
-        tini \
-        python3 \
-        build-essential && \
-    rm -rf /var/lib/apt/lists/*
+COPY server/package*.json ./
+RUN mkdir -p /npm-debug && \
+    npm install --production --verbose > /npm-debug/install.log 2>&1 || \
+    (echo "npm 安装失败，请查看完整日志" && \
+     cp /npm-debug/install.log /npm-debug/full_install.log && \
+     # 输出完整日志而不是最后100行
+     cat /npm-debug/full_install.log && \
+     exit 1)
 
 # 安装中文字体支持
 RUN fc-cache -fv
