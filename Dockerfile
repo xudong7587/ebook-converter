@@ -4,13 +4,13 @@ FROM node:16-slim
 # 设置工作目录
 WORKDIR /app
 
-# 安装系统依赖（添加国内源加速）
+# 安装系统依赖（修复反斜杠格式）
 RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         calibre \
         wkhtmltopdf \
-        fontconfig \  # 确保fontconfig被安装
+        fontconfig \
         fonts-wqy-microhei \
         tini && \
     rm -rf /var/lib/apt/lists/*
