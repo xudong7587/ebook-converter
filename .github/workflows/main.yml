@@ -3,7 +3,7 @@ name: Build Docker Image
 on:
   push:
     branches:
-      - main  # 当main分支有更新时触发构建
+      - main
 
 jobs:
   build:
@@ -16,14 +16,17 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and save Docker image
+      - name: Build Docker image (with detailed logging)
         run: |
           docker build -t ebook-converter:latest .
           mkdir -p artifacts
-          docker save -o artifacts/image.tar ebook-converter:latest
+          # 尝试从容器中复制日志文件（即使构建失败）
+          container_id=$(docker create ebook-converter:latest)
+          docker cp $container_id:/npm-debug/. artifacts/npm-debug || true
+          docker rm $container_id || true
 
-      - name: Upload image as artifact
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: docker-image
-          path: artifacts/image.tar
+          name: build-artifacts
+          path: artifacts/
