@@ -1,4 +1,4 @@
-name: Build and Deploy Docker Image
+name: Build Docker Image
 
 on:
   push:
@@ -8,42 +8,52 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx with container driver
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          driver: docker-container  # 使用支持缓存的容器驱动
-          install: true
+          driver: docker-container  # 使用支持缓存的驱动
 
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
-      - name: Build Docker image with cache
+      - name: Build Docker image (with detailed logging)
+        id: build-image
+        continue-on-error: true  # 允许步骤失败但继续执行后续步骤
         run: |
           docker buildx build \
             --cache-from type=local,src=/tmp/.buildx-cache \
             --cache-to type=local,dest=/tmp/.buildx-cache,mode=max \
             -t ebook-converter:latest \
-            --load .  # 添加--load参数将镜像加载到本地Docker
+            --load .
 
-      - name: Save Docker image
+      - name: Extract npm debug logs (even if build failed)
+        if: always()  # 无论前面步骤是否成功都执行
         run: |
-          mkdir -p artifacts
-          docker save -o artifacts/ebook-converter.tar ebook-converter:latest
+          mkdir -p artifacts/npm-debug
+          # 尝试从容器中复制日志文件
+          container_id=$(docker create ebook-converter:latest || true)
+          if [ -n "$container_id" ]; then
+            docker cp $container_id:/npm-debug/. artifacts/npm-debug/ || true
+            docker rm $container_id || true
+          fi
+          # 如果容器创建失败，尝试从构建上下文获取日志
+          if [ ! -f "artifacts/npm-debug/full_install.log" ]; then
+            echo "No container logs found, checking build context..."
+            # 这一步通常不会执行，但作为备选方案
+            mkdir -p artifacts/npm-debug
+            echo "Build failed before container creation. Check GitHub Actions logs for earlier errors." > artifacts/npm-debug/error_placeholder.txt
+          fi
 
-      - name: Upload image as artifact
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
+        if: always()  # 无论前面步骤是否成功都上传日志
         with:
-          name: docker-image
-          path: artifacts/ebook-converter.tar
+          name: build-artifacts
+          path: artifacts/
           retention-days: 7
+
+      - name: Fail the job if build failed
+        if: steps.build-image.outcome == 'failure'
+        run: exit 1  # 确保整体工作流标记为失败
