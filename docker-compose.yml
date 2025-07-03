@@ -1,0 +1,25 @@
+version: '3'
+
+services:
+  book-converter-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/output:/app/output
+    restart: always
+    container_name: book-converter-backend
+
+  book-converter-frontend:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    depends_on:
+      - book-converter-backend
+    restart: always
+    container_name: book-converter-frontend    

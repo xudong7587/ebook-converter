@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TXT/EPUB/MOBI 转 EPUB/MOBI 工具</title>
+    <style>
+        :root {
+            --primary-color: #4a6cf7;
+            --secondary-color: #f0f2f5;
+            --text-color: #333;
+            --light-text: #666;
+            --border-color: #eaeaea;
+            --success-color: #52c41a;
+            --error-color: #f56c6c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), #6b8cff);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .form-section {
+            padding: 30px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--primary-color);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(74, 108, 247, 0.2);
+        }
+        
+        .file-input {
+            display: flex;
+            align-items: center;
+        }
+        
+        .file-input input[type="file"] {
+            display: none;
+        }
+        
+        .file-input label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+        }
+        
+        .file-input label:hover {
+            background-color: #e9ecef;
+        }
+        
+        .file-name {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: white;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .cover-preview {
+            margin-top: 10px;
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            background-color: #3a5cf0;
+        }
+        
+        .btn-secondary {
+            background-color: #f0f2f5;
+            color: var(--text-color);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e9ecef;
+        }
+        
+        .progress-container {
+            width: 100%;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            height: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .status-message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+            font-size: 14px;
+        }
+        
+        .status-success {
+            background-color: rgba(82, 196, 26, 0.1);
+            color: var(--success-color);
+            border-left: 3px solid var(--success-color);
+        }
+        
+        .status-error {
+            background-color: rgba(245, 108, 108, 0.1);
+            color: var(--error-color);
+            border-left: 3px solid var(--error-color);
+        }
+        
+        .footer {
+            background-color: var(--secondary-color);
+            padding: 15px 30px;
+            text-align: center;
+            font-size: 14px;
+            color: var(--light-text);
+        }
+        
+        @media (max-width: 600px) {
+            .form-section {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>TXT/EPUB/MOBI 转 EPUB/MOBI 工具</h1>
+            <p>轻松将 TXT、EPUB、MOBI 文本转换为 EPUB 或 MOBI 格式，并添加自定义封面</p>
+        </div>
+        
+        <div class="form-section">
+            <h2 class="section-title">基本信息</h2>
+            <div class="form-group">
+                <label for="title">书籍标题</label>
+                <input type="text" id="title" class="form-control" placeholder="输入书籍标题" required>
+            </div>
+            <div class="form-group">
+                <label for="author">作者</label>
+                <input type="text" id="author" class="form-control" placeholder="输入作者名称" required>
+            </div>
+            
+            <h2 class="section-title">文件上传</h2>
+            <div class="form-group">
+                <label for="sourceFile">源文件 (TXT/EPUB/MOBI)</label>
+                <div class="file-input">
+                    <input type="file" id="sourceFile" accept=".txt,.epub,.mobi" required>
+                    <label for="sourceFile">选择源文件</label>
+                    <div class="file-name" id="sourceFileName">未选择文件</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="coverFile">封面图片 (可选)</label>
+                <div class="file-input">
+                    <input type="file" id="coverFile" accept="image/*">
+                    <label for="coverFile">选择封面图片</label>
+                    <div class="file-name" id="coverFileName">未选择图片</div>
+                </div>
+                <img src="" alt="封面预览" class="cover-preview" id="coverPreview">
+            </div>
+            
+            <h2 class="section-title">章节设置</h2>
+            <div class="form-group">
+                <label for="chapterPattern">章节识别模式</label>
+                <select id="chapterPattern" class="form-control">
+                    <option value="default">默认 (第X章,第X节)</option>
+                    <option value="number">仅数字开头 (1.,2.,3.)</option>
+                    <option value="roman">罗马数字 (第一章,第二章)</option>
+                    <option value="custom">自定义正则表达式</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="customPatternGroup" style="display: none;">
+                <label for="customPattern">自定义正则表达式</label>
+                <input type="text" id="customPattern" class="form-control" placeholder="输入章节识别的正则表达式">
+                <p class="text-muted mt-2">示例: ^第[一二三四五六七八九十百千0-9]+章</p>
+            </div>
+
+            <h2 class="section-title">输出格式</h2>
+            <div class="form-group">
+                <label for="outputFormat">选择输出格式</label>
+                <select id="outputFormat" class="form-control">
+                    <option value="epub">EPUB</option>
+                    <option value="mobi">MOBI</option>
+                </select>
+            </div>
+            
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            
+            <div class="status-message" id="statusMessage"></div>
+            
+            <button class="btn" id="convertBtn">开始转换</button>
+        </div>
+        
+        <div class="footer">
+            <p>© 2025 TXT/EPUB/MOBI 转 EPUB/MOBI 工具 | 简单易用的格式转换解决方案</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取DOM元素
+            const sourceFileInput = document.getElementById('sourceFile');
+            const coverFileInput = document.getElementById('coverFile');
+            const sourceFileName = document.getElementById('sourceFileName');
+            const coverFileName = document.getElementById('coverFileName');
+            const coverPreview = document.getElementById('coverPreview');
+            const titleInput = document.getElementById('title');
+            const authorInput = document.getElementById('author');
+            const convertBtn = document.getElementById('convertBtn');
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const statusMessage = document.getElementById('statusMessage');
+            const chapterPattern = document.getElementById('chapterPattern');
+            const customPatternGroup = document.getElementById('customPatternGroup');
+            const customPattern = document.getElementById('customPattern');
+            const outputFormatSelect = document.getElementById('outputFormat');
+            
+            // 章节识别模式变化时的处理
+            chapterPattern.addEventListener('change', function() {
+                if (this.value === 'custom') {
+                    customPatternGroup.style.display = 'block';
+                } else {
+                    customPatternGroup.style.display = 'none';
+                }
+            });
+            
+            // 显示状态消息的函数
+            function showStatus(message, type) {
+                statusMessage.textContent = message;
+                statusMessage.className = 'status-message';
+                
+                if (type === 'success') {
+                    statusMessage.classList.add('status-success');
+                } else if (type === 'error') {
+                    statusMessage.classList.add('status-error');
+                }
+                
+                statusMessage.style.display = 'block';
+            }
+            
+            // 显示选择的源文件名
+            sourceFileInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    sourceFileName.textContent = this.files[0].name;
+                }
+            });
+            
+            // 显示选择的封面图片和文件名
+            coverFileInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    coverFileName.textContent = this.files[0].name;
+                    
+                    // 预览封面图片
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        coverPreview.src = e.target.result;
+                        coverPreview.style.display = 'block';
+                    }
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+            
+            // 转换按钮点击事件
+            convertBtn.addEventListener('click', function() {
+                // 验证输入
+                if (!titleInput.value || !authorInput.value || !sourceFileInput.files[0]) {
+                    showStatus('请填写所有必填信息并选择源文件', 'error');
+                    return;
+                }
+                
+                if (chapterPattern.value === 'custom' && !customPattern.value.trim()) {
+                    showStatus('请输入自定义正则表达式', 'error');
+                    return;
+                }
+
+                const sourceFile = sourceFileInput.files[0];
+                const sourceExtension = sourceFile.name.split('.').pop().toLowerCase();
+                const outputFormat = outputFormatSelect.value;
+
+                if (sourceExtension === outputFormat) {
+                    showStatus('输出格式不能与源文件格式相同', 'error');
+                    return;
+                }
+                
+                // 显示进度条
+                progressContainer.style.display = 'block';
+                statusMessage.style.display = 'none';
+                progressBar.style.width = '0%';
+                
+                // 创建表单数据
+                const formData = new FormData();
+                formData.append('title', titleInput.value);
+                formData.append('author', authorInput.value);
+                formData.append('chapterPattern', chapterPattern.value);
+                formData.append('customPattern', customPattern.value || '');
+                formData.append('outputFormat', outputFormat);
+                formData.append('sourceFile', sourceFile);
+                
+                if (coverFileInput.files && coverFileInput.files[0]) {
+                    formData.append('coverFile', coverFileInput.files[0]);
+                }
+                
+                // 向后端API发送请求
+                fetch('http://localhost:5000/api/convert', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // 显示进度条到100%
+                        progressBar.style.width = '100%';
+                        
+                        // 获取文件名
+                        const contentDisposition = response.headers.get('content-disposition');
+                        let fileName = `${titleInput.value}.${outputFormat}`;
+                        
+                        if (contentDisposition) {
+                            const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                            if (fileNameMatch && fileNameMatch[1]) {
+                                fileName = fileNameMatch[1];
+                            }
+                        }
+                        
+                        // 下载文件
+                        return response.blob().then(blob => {
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = fileName;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(url);
+                            
+                            showStatus(`文件转换成功: ${fileName}`, 'success');
+                        });
+                    } else {
+                        return response.json().then(error => {
+                            throw new Error(error.error || '转换失败');
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('转换失败:', error);
+                    showStatus(`转换失败: ${error.message}`, 'error');
+                })
+                .finally(() => {
+                    // 重置进度条
+                    setTimeout(() => {
+                        progressBar.style.width = '0%';
+                        progressContainer.style.display = 'none';
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>    
