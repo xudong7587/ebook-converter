@@ -1,25 +1,36 @@
-# 使用Python官方镜像作为基础
+# backend/Dockerfile
+# 第一阶段：安装Calibre
+FROM python:3.9-slim AS builder
+
+WORKDIR /tmp
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN wget -nv -O calibre.tar.xz https://download.calibre-ebook.com/linux-amd64/calibre-6.25.0-x86_64.txz \
+    && mkdir -p /opt/calibre \
+    && tar -xJf calibre.tar.xz -C /opt/calibre --strip-components=1 \
+    && rm calibre.tar.xz
+
+# 第二阶段：创建最终镜像
 FROM python:3.9-slim
 
-# 设置工作目录
 WORKDIR /app
 
-# 安装Calibre（用于格式转换）
-RUN apt-get update && \
-    apt-get install -y wget && \
-    wget -nv -O- https://download.calibre-ebook.com/linux-installer.sh | sh /dev/stdin && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# 复制Calibre二进制文件
+COPY --from=builder /opt/calibre /opt/calibre
+RUN ln -s /opt/calibre/ebook-convert /usr/bin/ebook-convert
 
-# 安装Python依赖
+# 安装依赖和应用
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1-mesa-glx \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-
-# 复制应用代码
 COPY . .
 
-# 暴露端口
 EXPOSE 5000
-
-# 启动应用
-CMD ["python", "app.py"]    
+CMD ["python", "app.py"]
